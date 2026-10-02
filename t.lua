@@ -1,132 +1,20 @@
-local ScreenGui = Instance.new("ScreenGui")
-local MainFrame = Instance.new("Frame")
-local Title = Instance.new("TextLabel")
-local TabBar = Instance.new("Frame")
-local ContentFrame = Instance.new("Frame")
-local UICorner = Instance.new("UICorner")
-local TitleCorner = Instance.new("UICorner")
-local MainTabBtn = Instance.new("TextButton")
-local WPTabBtn = Instance.new("TextButton")
-local KBTabBtn = Instance.new("TextButton")
-local MainContent = Instance.new("Frame")
-local ToggleButton = Instance.new("TextButton")
-local ButtonCorner1 = Instance.new("UICorner")
-local AimbotButton = Instance.new("TextButton")
-local ButtonCornerA = Instance.new("UICorner")
-local WPContent = Instance.new("Frame")
-local WPScroll = Instance.new("ScrollingFrame")
-local WPLayout = Instance.new("UIListLayout")
-local KBContent = Instance.new("Frame")
-local KBScroll = Instance.new("ScrollingFrame")
-local KBLayout = Instance.new("UIListLayout")
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+local UserInputService = game:GetService("UserInputService")
+local TeleportService = game:GetService("TeleportService")
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+local camera = workspace.CurrentCamera
 
-ScreenGui.Name = "PrisonLifePremiumHub"
-ScreenGui.Parent = game.CoreGui
-ScreenGui.ResetOnSpawn = false
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-MainFrame.Position = UDim2.new(0.1, 0, 0.2, 0)
-MainFrame.Size = UDim2.new(0, 260, 0, 240)
-MainFrame.Active = true
-MainFrame.Draggable = true
-UICorner.Parent = MainFrame
-Title.Name = "Title"
-Title.Parent = MainFrame
-Title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-Title.Size = UDim2.new(1, 0, 0, 35)
-Title.Font = Enum.Font.SourceSansBold
-Title.Text = "Prison Life Premium Hub"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 16
-TitleCorner.Parent = Title
-TabBar.Name = "TabBar"
-TabBar.Parent = MainFrame
-TabBar.BackgroundTransparency = 1
-TabBar.Position = UDim2.new(0, 0, 0, 35)
-TabBar.Size = UDim2.new(1, 0, 0, 30)
-
-local function createTabBtn(name, text, pos, parent)
-    local btn = Instance.new("TextButton")
-    btn.Name = name
-    btn.Parent = parent
-    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    btn.BorderSizePixel = 0
-    btn.Position = pos
-    btn.Size = UDim2.new(0.333, 0, 1, 0)
-    btn.Font = Enum.Font.SourceSansBold
-    btn.Text = text
-    btn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    btn.TextSize = 14
-    return btn
-end
-
-MainTabBtn = createTabBtn("MainTabBtn", "Main", UDim2.new(0, 0, 0, 0), TabBar)
-WPTabBtn = createTabBtn("WPTabBtn", "Waypoints", UDim2.new(0.333, 0, 0, 0), TabBar)
-KBTabBtn = createTabBtn("KBTabBtn", "Keybinds", UDim2.new(0.666, 0, 0, 0), TabBar)
-ContentFrame.Name = "ContentFrame"
-ContentFrame.Parent = MainFrame
-ContentFrame.BackgroundTransparency = 1
-ContentFrame.Position = UDim2.new(0, 0, 0, 65)
-ContentFrame.Size = UDim2.new(1, 0, 1, -65)
-
-local function setupContentFrame(frame, parent)
-    frame.Parent = parent
-    frame.BackgroundTransparency = 1
-    frame.Size = UDim2.new(1, 0, 1, 0)
-    frame.Visible = false
-end
-
-setupContentFrame(MainContent, ContentFrame)
-setupContentFrame(WPContent, ContentFrame)
-setupContentFrame(KBContent, ContentFrame)
-MainContent.Visible = true
-MainTabBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-MainTabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-ToggleButton.Name = "ToggleButton"
-ToggleButton.Parent = MainContent
-ToggleButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-ToggleButton.Position = UDim2.new(0.1, 0, 0.15, 0)
-ToggleButton.Size = UDim2.new(0, 208, 0, 35)
-ToggleButton.Font = Enum.Font.SourceSansBold
-ToggleButton.Text = "Bypass TP: OFF"
-ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleButton.TextSize = 16
-ButtonCorner1.Parent = ToggleButton
-
-AimbotButton.Name = "AimbotButton"
-AimbotButton.Parent = MainContent
-AimbotButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-AimbotButton.Position = UDim2.new(0.1, 0, 0.45, 0)
-AimbotButton.Size = UDim2.new(0, 208, 0, 35)
-AimbotButton.Font = Enum.Font.SourceSansBold
-AimbotButton.Text = "Smart Aimbot: OFF"
-AimbotButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-AimbotButton.TextSize = 16
-ButtonCornerA.Parent = AimbotButton
-
-WPScroll.Name = "WPScroll"
-WPScroll.Parent = WPContent
-WPScroll.BackgroundTransparency = 1
-WPScroll.Position = UDim2.new(0, 10, 0, 10)
-WPScroll.Size = UDim2.new(1, -20, 1, -20)
-WPScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-WPScroll.ScrollBarThickness = 4
-WPLayout.Parent = WPScroll
-WPLayout.SortOrder = Enum.SortOrder.LayoutOrder
-WPLayout.Padding = UDim.new(0, 5)
-
-KBScroll.Name = "KBScroll"
-KBScroll.Parent = KBContent
-KBScroll.BackgroundTransparency = 1
-KBScroll.Position = UDim2.new(0, 10, 0, 10)
-KBScroll.Size = UDim2.new(1, -20, 1, -20)
-KBScroll.CanvasSize = UDim2.new(0, 0, 0, 220)
-KBScroll.ScrollBarThickness = 4
-KBLayout.Parent = KBScroll
-KBLayout.SortOrder = Enum.SortOrder.LayoutOrder
-KBLayout.Padding = UDim.new(0, 5)
+local cfg = {
+    tpEnabled = false,
+    aimbotEnabled = false,
+    aimMode = "Head", -- "Head" или "AllBody"
+    tpOnRespawn = false,
+    grabGuns = false,
+    espEnabled = false,
+    aimMaxDistance = 250
+}
 
 local binds = {
     ClickTP = Enum.KeyCode.Q,
@@ -134,117 +22,59 @@ local binds = {
     DeleteWP = Enum.KeyCode.T,
     Rejoin = Enum.KeyCode.R,
     Ghost = Enum.KeyCode.G,
-    Minimize = Enum.KeyCode.M
+    Minimize = Enum.KeyCode.M,
+    AimToggle = Enum.KeyCode.N,
+    Reload = Enum.KeyCode.F8
 }
-local currentRebinding = nil
-local function createBindRow(actionName, displayName)
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 32)
-    frame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    frame.Parent = KBScroll
-    local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, 4)
-    c.Parent = frame
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(0.6, 0, 1, 0)
-    lbl.Position = UDim2.new(0, 5, 0, 0)
-    lbl.BackgroundTransparency = 1
-    lbl.Font = Enum.Font.SourceSansBold
-    lbl.Text = displayName
-    lbl.TextColor3 = Color3.fromRGB(230, 230, 230)
-    lbl.TextSize = 13
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Parent = frame
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.35, 0, 0.8, 0)
-    btn.Position = UDim2.new(0.62, 0, 0.1, 0)
-    btn.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
-    btn.Font = Enum.Font.SourceSansBold
-    btn.Text = binds[actionName].Name
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 12
-    btn.Parent = frame
-    local bc = Instance.new("UICorner")
-    bc.CornerRadius = UDim.new(0, 4)
-    bc.Parent = btn
-    btn.MouseButton1Click:Connect(function()
-        if currentRebinding then return end
-        currentRebinding = actionName
-        btn.Text = "..."
-        btn.BackgroundColor3 = Color3.fromRGB(100, 80, 40)
-    end)
-    return btn, actionName
-end
 
-local bindButtons = {}
-bindButtons["ClickTP"] = createBindRow("ClickTP", "Hold Key + Click TP")
-bindButtons["SaveWP"] = createBindRow("SaveWP", "Alt + Key: Save Position")
-bindButtons["DeleteWP"] = createBindRow("DeleteWP", "Alt + Key: Delete Last Position")
-bindButtons["Rejoin"] = createBindRow("Rejoin", "Alt + Key: Quick Rejoin")
-bindButtons["Ghost"] = createBindRow("Ghost", "Alt + Key: Ghost Mode Toggle")
-bindButtons["Minimize"] = createBindRow("Minimize", "Alt + Key: Minimize GUI")
-
-local function switchTab(activeBtn, activeContent)
-    MainContent.Visible = false
-    WPContent.Visible = false
-    KBContent.Visible = false
-    MainTabBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    WPTabBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    KBTabBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    MainTabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    WPTabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    KBTabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    activeContent.Visible = true
-    activeBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-    activeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-end
-
-MainTabBtn.MouseButton1Click:Connect(function() switchTab(MainTabBtn, MainContent) end)
-WPTabBtn.MouseButton1Click:Connect(function() switchTab(WPTabBtn, WPContent) end)
-KBTabBtn.MouseButton1Click:Connect(function() switchTab(KBTabBtn, KBContent) end)
-
-local player = game.Players.LocalPlayer
-local mouse = player:GetMouse()
-local UserInputService = game:GetService("UserInputService")
-local TeleportService = game:GetService("TeleportService")
-local RunService = game:GetService("RunService")
-local camera = workspace.CurrentCamera
-local tpEnabled = false
-local aimbotEnabled = false
-local ghostMode = false
-local minimized = false
 local waypoints = {}
 local wpCount = 0
-local aimMaxDistance = 250
+local whitelist = {}
+local blacklist = {}
+local lastDeathPos = nil
+local ghostMode = false
+local minimized = false
+local aimbotActiveState = false
 
-ToggleButton.MouseButton1Click:Connect(function()
-    tpEnabled = not tpEnabled
-    if tpEnabled then
-        ToggleButton.Text = "Bypass TP: ON"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-    else
-        ToggleButton.Text = "Bypass TP: OFF"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-    end
-end)
+local function saveConfig()
+    local data = {cfg = cfg, waypoints = waypoints, whitelist = whitelist, blacklist = blacklist}
+    pcall(function() writefile("PL_Premium_Hub.json", HttpService:JSONEncode(data)) end)
+end
 
-AimbotButton.MouseButton1Click:Connect(function()
-    aimbotEnabled = not aimbotEnabled
-    if aimbotEnabled then
-        AimbotButton.Text = "Smart Aimbot: ON"
-        AimbotButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-    else
-        AimbotButton.Text = "Smart Aimbot: OFF"
-        AimbotButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+local function loadConfig()
+    pcall(function()
+        if isfile and isfile("PL_Premium_Hub.json") then
+            local data = HttpService:JSONDecode(readfile("PL_Premium_Hub.json"))
+            if data.cfg then cfg = data.cfg end
+            if data.waypoints then waypoints = data.waypoints end
+            if data.whitelist then whitelist = data.whitelist end
+            if data.blacklist then blacklist = data.blacklist end
+        end
+    end)
+end
+loadConfig()
+
+local function giveWeapon(gunName)
+    local workspaceGuns = workspace:FindFirstChild("Prison_Guns") or workspace:FindFirstChild("Guns")
+    if workspaceGuns then
+        local giver = workspaceGuns:FindFirstChild(gunName)
+        if giver and giver:FindFirstChild("ItemGiver") then
+            local itemGiver = giver.ItemGiver
+            if itemGiver:IsA("RemoteEvent") then
+                itemGiver:FireServer()
+            elseif itemGiver:IsA("BindableEvent") then
+                itemGiver:Fire()
+            end
+        end
     end
-end)
+end
 
 local function safeTeleport(targetPos)
     local character = player.Character
     if not character then return end
     local hrp = character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
-    local maxStep = 25 
+    local maxStep = 25
     local currentPos = hrp.Position
     local direction = (targetPos - currentPos).Unit
     local distance = (targetPos - currentPos).Magnitude
@@ -257,134 +87,259 @@ local function safeTeleport(targetPos)
     hrp.CFrame = CFrame.new(targetPos)
 end
 
-mouse.Button1Down:Connect(function()
-    if tpEnabled and mouse.Target then
-        if UserInputService:IsKeyDown(binds.ClickTP) then
-            local targetPos = mouse.Hit.p + Vector3.new(0, 3, 0)
-            safeTeleport(targetPos)
+player.CharacterRemoving:Connect(function(char)
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if hrp then lastDeathPos = hrp.Position end
+end)
+
+player.CharacterAdded:Connect(function(char)
+    char:WaitForChild("HumanoidRootPart")
+    task.wait(0.5)
+    local isCriminal = (player.TeamColor == BrickColor.new("Bright orange"))
+    
+    if cfg.grabGuns and isCriminal then
+        giveWeapon("Remington 870")
+        giveWeapon("M4A1")
+        task.wait(0.3)
+    end
+    
+    if cfg.tpOnRespawn and lastDeathPos then
+        if cfg.grabGuns and isCriminal then
+            local hasRemington = char:FindFirstChild("Remington 870") or player.Backpack:FindFirstChild("Remington 870")
+            local hasM4 = char:FindFirstChild("M4A1") or player.Backpack:FindFirstChild("M4A1")
+            if hasRemington and hasM4 then
+                safeTeleport(lastDeathPos + Vector3.new(0, 3, 0))
+            end
+        else
+            safeTeleport(lastDeathPos + Vector3.new(0, 3, 0))
         end
     end
 end)
 
-local function isVisible(targetPart, character)
-    local ignoreList = {player.Character, character, camera}
-    local parts = camera:GetPartsObscuringTarget({camera.CFrame.Position, targetPart.Position}, ignoreList)
+local function isVisible(part, char)
+    local parts = camera:GetPartsObscuringTarget({camera.CFrame.Position, part.Position}, {player.Character, char, camera})
     return #parts == 0
 end
 
 local function getBestTarget()
-    local closestTarget = nil
-    local maxDist = aimMaxDistance
+    local closest = nil
+    local maxDist = cfg.aimMaxDistance
     local myHrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if not myHrp then return nil end
+
     for _, p in ipairs(game.Players:GetPlayers()) do
         if p ~= player and p.Character and p.TeamColor ~= player.TeamColor and p.TeamColor ~= BrickColor.new("Bright orange") then
-            local head = p.Character:FindFirstChild("Head")
-            local humanoid = p.Character:FindFirstChildOfClass("Humanoid")
-            if head and humanoid and humanoid.Health > 0 then
-                local distance = (head.Position - myHrp.Position).Magnitude
-                if distance < maxDist then
-                    if isVisible(head, p.Character) then
-                        maxDist = distance
-                        closestTarget = head
+            if whitelist[p.Name] or blacklist[p.Name] == false then
+                local character = p.Character
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                if humanoid and humanoid.Health > 0 then
+                    local targetPart = (cfg.aimMode == "Head") and character:FindFirstChild("Head") or character:FindFirstChild("HumanoidRootPart")
+                    if targetPart then
+                        local distance = (targetPart.Position - myHrp.Position).Magnitude
+                        if distance < maxDist and isVisible(targetPart, character) then
+                            maxDist = distance
+                            closest = targetPart
+                        end
                     end
                 end
             end
         end
     end
-    return closestTarget
-end
-
-local function autoShoot()
-    local tool = player.Character and player.Character:FindFirstChildOfClass("Tool")
-    if tool and tool:FindFirstChild("Input") then
-        tool.Input:FireServer(mouse.Hit.p)
-    end
+    return closest
 end
 
 RunService.RenderStepped:Connect(function()
-    if aimbotEnabled then
+    local isRmbPressed = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
+    if cfg.aimbotEnabled and (aimbotActiveState or isRmbPressed) then
         local target = getBestTarget()
         if target then
             camera.CFrame = CFrame.new(camera.CFrame.Position, target.Position)
-            autoShoot()
+            local tool = player.Character and player.Character:FindFirstChildOfClass("Tool")
+            if tool and tool:FindFirstChild("Input") then tool.Input:FireServer(mouse.Hit.p) end
+        end
+    end
+    
+    if cfg.espEnabled then
+        for _, p in ipairs(game.Players:GetPlayers()) do
+            if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = p.Character.HumanoidRootPart
+                if not hrp:FindFirstChild("HubESP") then
+                    local bbg = Instance.new("BillboardGui", hrp)
+                    bbg.Name = "HubESP"
+                    bbg.AlwaysOnTop = true
+                    bbg.Size = UDim2.new(4, 0, 5, 0)
+                    local frame = Instance.new("Frame", bbg)
+                    frame.Size = UDim2.new(1, 0, 1, 0)
+                    frame.BackgroundTransparency = 1
+                    local inline = Instance.new("SelectionBox", p.Character)
+                    inline.Name = "EspBox"
+                    inline.Adornee = p.Character
+                    inline.Color3 = (p.TeamColor == BrickColor.new("Bright orange")) and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(200, 50, 50)
+                end
+            end
+        end
+    else
+        for _, p in ipairs(game.Players:GetPlayers()) do
+            if p.Character then
+                local hrp = p.Character:FindFirstChild("HumanoidRootPart")
+                if hrp and hrp:FindFirstChild("HubESP") then hrp.HubESP:Destroy() end
+                if p.Character:FindFirstChild("EspBox") then p.Character.EspBox:Destroy() end
+            end
         end
     end
 end)
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local MainFrame = Instance.new("Frame", ScreenGui)
+local Title = Instance.new("TextLabel", MainFrame)
+local TabBar = Instance.new("Frame", MainFrame)
+local ContentFrame = Instance.new("Frame", MainFrame)
+local UICorner = Instance.new("UICorner", MainFrame)
 
-local function updateWPMenu()
-    for _, child in ipairs(WPScroll:GetChildren()) do
-        if child:IsA("TextButton") then child:Destroy() end
-    end
-    for i, wp in ipairs(waypoints) do
-        local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(1, 0, 0, 30)
-        btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        btn.Font = Enum.Font.SourceSansBold
-        btn.Text = wp.name
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn.TextSize = 14
-        btn.Parent = WPScroll
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, 4)
-        corner.Parent = btn
-        btn.MouseButton1Click:Connect(function() safeTeleport(wp.pos) end)
-    end
-    WPScroll.CanvasSize = UDim2.new(0, 0, 0, #waypoints * 35)
+ScreenGui.Name = "PL_Premium_Hub_UI"
+ScreenGui.ResetOnSpawn = false
+MainFrame.Size = UDim2.new(0, 280, 0, 260)
+MainFrame.Position = UDim2.new(0.1, 0, 0.2, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.Active = true MainFrame.Draggable = true
+Title.Size = UDim2.new(1, 0, 0, 35) Title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+Title.Text = "Prison Life Premium Hub" Title.TextColor3 = Color3.fromRGB(255, 255, 255) Title.Font = Enum.Font.SourceSansBold
+TabBar.Size = UDim2.new(1, 0, 0, 30) TabBar.Position = UDim2.new(0, 0, 0, 35) TabBar.BackgroundTransparency = 1
+ContentFrame.Size = UDim2.new(1, 0, 1, -65) ContentFrame.Position = UDim2.new(0, 0, 0, 65) ContentFrame.BackgroundTransparency = 1
+
+local tabs = {}
+local function createTab(name, text, pos)
+    local btn = Instance.new("TextButton", TabBar)
+    btn.Size = UDim2.new(0.2, 0, 1, 0) btn.Position = pos
+    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40) btn.Text = text btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    btn.Font = Enum.Font.SourceSansBold btn.BorderSizePixel = 0
+    local f = Instance.new("ScrollingFrame", ContentFrame)
+    f.Size = UDim2.new(1, -20, 1, -20) f.Position = UDim2.new(0, 10, 0, 10) f.BackgroundTransparency = 1 f.Visible = false
+    f.ScrollBarThickness = 4 f.CanvasSize = UDim2.new(0, 0, 0, 400)
+    local l = Instance.new("UIListLayout", f) l.Padding = UDim.new(0, 5)
+    tabs[name] = {btn = btn, frame = f}
+    btn.MouseButton1Click:Connect(function()
+        for _, t in pairs(tabs) do t.frame.Visible = false t.btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40) end
+        f.Visible = true btn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+    end)
 end
 
+createTab("Main", "Main", UDim2.new(0, 0, 0, 0))
+createTab("Waypoints", "WPs", UDim2.new(0.2, 0, 0, 0))
+createTab("Keybinds", "Binds", UDim2.new(0.4, 0, 0, 0))
+createTab("Lists", "Lists", UDim2.new(0.6, 0, 0, 0))
+createTab("Config", "Cfg", UDim2.new(0.8, 0, 0, 0))
+tabs.Main.frame.Visible = true
+
+local function createToggle(parent, text, default, callback)
+    local btn = Instance.new("TextButton", parent)
+    btn.Size = UDim2.new(1, 0, 0, 30) btn.Font = Enum.Font.SourceSansBold btn.TextSize = 14
+    local function update()
+        btn.Text = text .. ": " .. (default and "ON" or "OFF")
+        btn.BackgroundColor3 = default and Color3.fromRGB(50, 180, 50) or Color3.fromRGB(180, 50, 50)
+    end
+    btn.MouseButton1Click:Connect(function() default = not default callback(default) update() saveConfig() end)
+    update() Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+end
+
+createToggle(tabs.Main.frame, "Bypass Click TP", cfg.tpEnabled, function(v) cfg.tpEnabled = v end)
+createToggle(tabs.Main.frame, "Smart Aimbot", cfg.aimbotEnabled, function(v) cfg.aimbotEnabled = v end)
+createToggle(tabs.Main.frame, "ESP Master Switch", cfg.espEnabled, function(v) cfg.espEnabled = v end)
+
+createToggle(tabs.Config.frame, "Hitbox Mode (ON=Head/OFF=Body)", (cfg.aimMode == "Head"), function(v) cfg.aimMode = v and "Head" or "AllBody" end)
+createToggle(tabs.Config.frame, "Auto Grab Guns on Respawn", cfg.grabGuns, function(v) cfg.grabGuns = v end)
+createToggle(tabs.Config.frame, "Teleport to Last Pos on Death", cfg.tpOnRespawn, function(v) cfg.tpOnRespawn = v end)
+
+local function updateWPMenu()
+    for _, c in ipairs(tabs.Waypoints.frame:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
+    for _, wp in ipairs(waypoints) do
+        local b = Instance.new("TextButton", tabs.Waypoints.frame)
+        b.Size = UDim2.new(1, 0, 0, 30) b.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        b.Text = wp.name b.TextColor3 = Color3.fromRGB(255, 255, 255) b.Font = Enum.Font.SourceSansBold
+        b.MouseButton1Click:Connect(function() safeTeleport(wp.pos) end)
+        Instance.new("UICorner", b).CornerRadius = UDim.new(0, 4)
+    end
+end
+updateWPMenu()
+
 local function addWaypoint()
-    local character = player.Character
-    if character and character:FindFirstChild("HumanoidRootPart") then
+    local char = player.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
         wpCount = wpCount + 1
-        local currentPos = character.HumanoidRootPart.Position
-        table.insert(waypoints, {name = "Waypoint " .. wpCount, pos = currentPos})
-        updateWPMenu()
+        table.insert(waypoints, {name = "Waypoint " .. wpCount, pos = char.HumanoidRootPart.Position})
+        updateWPMenu() saveConfig()
     end
 end
 
 local function deleteLastWaypoint()
-    if #waypoints > 0 then
-        table.remove(waypoints, #waypoints)
-        updateWPMenu()
-    end
+    if #waypoints > 0 then table.remove(waypoints, #waypoints) updateWPMenu() saveConfig() end
 end
 
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
+local currentRebinding = nil
+local bindButtons = {}
+local function createBindRow(actionName, displayName)
+    local f = Instance.new("Frame", tabs.Keybinds.frame) f.Size = UDim2.new(1, 0, 0, 32) f.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    local lbl = Instance.new("TextLabel", f) lbl.Size = UDim2.new(0.6, 0, 1, 0) lbl.Position = UDim2.new(0, 5, 0, 0)
+    lbl.Text = displayName lbl.TextColor3 = Color3.fromRGB(230, 230, 230) lbl.Font = Enum.Font.SourceSansBold lbl.BackgroundTransparency = 1 lbl.TextXAlignment = Enum.TextXAlignment.Left
+    local b = Instance.new("TextButton", f) b.Size = UDim2.new(0.35, 0, 0.8, 0) b.Position = UDim2.new(0.62, 0, 0.1, 0)
+    b.BackgroundColor3 = Color3.fromRGB(65, 65, 65) b.Text = binds[actionName].Name b.TextColor3 = Color3.fromRGB(255, 255, 255) b.Font = Enum.Font.SourceSansBold
+    b.MouseButton1Click:Connect(function() if not currentRebinding then currentRebinding = actionName b.Text = "..." end end)
+    Instance.new("UICorner", f) Instance.new("UICorner", b)
+    bindButtons[actionName] = b
+end
+
+createBindRow("ClickTP", "Hold Key + Click TP")
+createBindRow("SaveWP", "Alt + Key: Save Position")
+createBindRow("DeleteWP", "Alt + Key: Delete Last Position")
+createBindRow("Rejoin", "Alt + Key: Quick Rejoin")
+createBindRow("Ghost", "Alt + Key: Ghost Mode Toggle")
+createBindRow("Minimize", "Alt + Key: Minimize GUI")
+createBindRow("AimToggle", "Alt + Key: Toggle Aimbot")
+createBindRow("Reload", "Alt + Key: Reload Script")
+
+local function updateListsMenu()
+    for _, c in ipairs(tabs.Lists.frame:GetChildren()) do if c:IsA("Frame") then c:Destroy() end end
+    for _, p in ipairs(game.Players:GetPlayers()) do
+        if p ~= player then
+            local row = Instance.new("Frame", tabs.Lists.frame) row.Size = UDim2.new(1, 0, 0, 35) row.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+            local lbl = Instance.new("TextLabel", row) lbl.Size = UDim2.new(0.5, 0, 1, 0) lbl.Position = UDim2.new(0, 5, 0, 0)
+            lbl.Text = p.Name lbl.TextColor3 = Color3.fromRGB(255, 255, 255) lbl.Font = Enum.Font.SourceSansBold lbl.BackgroundTransparency = 1 lbl.TextXAlignment = Enum.TextXAlignment.Left
+            
+            local wBtn = Instance.new("TextButton", row) wBtn.Size = UDim2.new(0.2, 0, 0.8, 0) wBtn.Position = UDim2.new(0.55, 0, 0.1, 0)
+            wBtn.Text = "WL" wBtn.BackgroundColor3 = whitelist[p.Name] and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(70, 70, 70)
+            wBtn.MouseButton1Click:Connect(function() whitelist[p.Name] = not whitelist[p.Name] blacklist[p.Name] = nil updateListsMenu() saveConfig() end)
+            
+            local bBtn = Instance.new("TextButton", row) bBtn.Size = UDim2.new(0.2, 0, 0.8, 0) bBtn.Position = UDim2.new(0.78, 0, 0.1, 0)
+            bBtn.Text = "BL" bBtn.BackgroundColor3 = blacklist[p.Name] and Color3.fromRGB(150, 50, 50) or Color3.fromRGB(70, 70, 70)
+            bBtn.MouseButton1Click:Connect(function() blacklist[p.Name] = not blacklist[p.Name] whitelist[p.Name] = nil updateListsMenu() saveConfig() end)
+            
+            Instance.new("UICorner", row) Instance.new("UICorner", wBtn) Instance.new("UICorner", bBtn)
+        end
+    end
+end
+game.Players.PlayerAdded:Connect(updateListsMenu) game.Players.PlayerRemoving:Connect(updateListsMenu) updateListsMenu()
+
+UserInputService.InputBegan:Connect(function(input, proc)
     if currentRebinding then
         if input.UserInputType == Enum.UserInputType.Keyboard then
             binds[currentRebinding] = input.KeyCode
             bindButtons[currentRebinding].Text = input.KeyCode.Name
-            bindButtons[currentRebinding].BackgroundColor3 = Color3.fromRGB(65, 65, 65)
-            currentRebinding = nil
+            currentRebinding = nil saveConfig()
         end
         return
     end
-    if gameProcessed then return end
-    local isAltPressed = UserInputService:IsKeyDown(Enum.KeyCode.LeftAlt) or UserInputService:IsKeyDown(Enum.KeyCode.RightAlt)
-    if isAltPressed then
+    if proc then return end
+    local alt = UserInputService:IsKeyDown(Enum.KeyCode.LeftAlt) or UserInputService:IsKeyDown(Enum.KeyCode.RightAlt)
+    if alt then
         if input.KeyCode == binds.Rejoin then
-            if #game.Players:GetPlayers() <= 1 then
-                TeleportService:Teleport(game.PlaceId, player)
-            else
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
-            end
+            if #game.Players:GetPlayers() <= 1 then TeleportService:Teleport(game.PlaceId, player) else TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player) end
         elseif input.KeyCode == binds.SaveWP then addWaypoint()
         elseif input.KeyCode == binds.DeleteWP then deleteLastWaypoint()
-        elseif input.KeyCode == binds.Ghost then
-            ghostMode = not ghostMode
-            MainFrame.Visible = not ghostMode
+        elseif input.KeyCode == binds.AimToggle then aimbotActiveState = not aimbotActiveState
+        elseif input.KeyCode == binds.Reload then ScreenGui:Destroy() loadstring(game:HttpGet("https://githubusercontent.com"))()
+        elseif input.KeyCode == binds.Ghost then ghostMode = not ghostMode MainFrame.Visible = not ghostMode
         elseif input.KeyCode == binds.Minimize then
             minimized = not minimized
-            if minimized then
-                MainFrame.Size = UDim2.new(0, 260, 0, 35)
-                TabBar.Visible = false
-                ContentFrame.Visible = false
-            else
-                MainFrame.Size = UDim2.new(0, 260, 0, 240)
-                TabBar.Visible = true
-                ContentFrame.Visible = true
-            end
+            if minimized then MainFrame.Size = UDim2.new(0, 280, 0, 35) TabBar.Visible = false ContentFrame.Visible = false else MainFrame.Size = UDim2.new(0, 280, 0, 260) TabBar.Visible = true ContentFrame.Visible = true end
         end
     end
 end)
