@@ -17,8 +17,8 @@ local cfg = {
     espEnabled = true,
     aimMaxDistance = 500,
     freecamSpeed = 1,
-    aimAssistFov = 100,  -- Радиус захвата аимбота в пикселях вокруг прицела
-    silentAimFov = 180   -- Радиус телепортации пуль вокруг прицела
+    aimAssistFov = 80,   
+    silentAimFov = 160   
 }
 
 local binds = {
@@ -45,16 +45,30 @@ local freecamRotX = 0
 local freecamRotY = 0
 local aimbotActiveState = false
 
+local aimCircle = Drawing.new("Circle")
+aimCircle.Color = Color3.fromRGB(255, 50, 50)
+aimCircle.Thickness = 1
+aimCircle.NumSides = 64
+aimCircle.Filled = false
+aimCircle.Visible = false
+
+local silentCircle = Drawing.new("Circle")
+silentCircle.Color = Color3.fromRGB(50, 255, 50)
+silentCircle.Thickness = 1
+silentCircle.NumSides = 64
+silentCircle.Filled = false
+silentCircle.Visible = false
+
 local function saveConfig()
     local data = {cfg = cfg, waypoints = waypoints, whitelist = whitelist, blacklist = blacklist, binds = {}}
     for k, v in pairs(binds) do data.binds[k] = v.Name end
-    pcall(function() writefile("PL_Premium_Hub_v7.json", HttpService:JSONEncode(data)) end)
+    pcall(function() writefile("PL_Solara_Hub.json", HttpService:JSONEncode(data)) end)
 end
 
 local function loadConfig()
     pcall(function()
-        if isfile and isfile("PL_Premium_Hub_v7.json") then
-            local data = HttpService:JSONDecode(readfile("PL_Premium_Hub_v7.json"))
+        if isfile and isfile("PL_Solara_Hub.json") then
+            local data = HttpService:JSONDecode(readfile("PL_Solara_Hub.json"))
             if data.cfg then cfg = data.cfg end
             if data.waypoints then waypoints = data.waypoints end
             if data.whitelist then whitelist = data.whitelist end
@@ -155,9 +169,9 @@ local function getTargetInFov(fovRadius)
                     if targetPart then
                         local screenPos, onScreen = camera:WorldToViewportPoint(targetPart.Position)
                         if onScreen then
-                            local mousePos = Vector2.new(mouse.X, mouse.Y)
+                            local mouseLoc = UserInputService:GetMouseLocation()
                             local targetPos2D = Vector2.new(screenPos.X, screenPos.Y)
-                            local distanceToCrosshair = (targetPos2D - mousePos).Magnitude
+                            local distanceToCrosshair = (targetPos2D - mouseLoc).Magnitude
                             local distanceToPlayer = (targetPart.Position - myHrp.Position).Magnitude
 
                             if distanceToCrosshair < shortestDistance and distanceToPlayer < cfg.aimMaxDistance then
@@ -175,28 +189,34 @@ local function getTargetInFov(fovRadius)
     return closestTarget
 end
 
-local oldNamecall
-oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-    local args = {...}
-    local method = getnamecallmethod()
-
-    if cfg.silentAimEnabled and method == "FireServer" and self.Name == "Input" then
-        local target = getTargetInFov(cfg.silentAimFov)
-        if target then
-            args[1] = target.Position
-            return oldNamecall(self, unpack(args))
+-- Безопасный триггер выстрела без hookmetamethod для Solara
+UserInputService.InputBegan:Connect(function(input, proc)
+    if proc then return end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 and cfg.silentAimEnabled then
+        local tool = player.Character and player.Character:FindFirstChildOfClass("Tool")
+        if tool and tool:FindFirstChild("Input") then
+            local target = getTargetInFov(cfg.silentAimFov)
+            if target then
+                tool.Input:FireServer(target.Position)
+            end
         end
     end
-    return oldNamecall(self, ...)
 end)
 RunService.RenderStepped:Connect(function()
+    local mouseLoc = UserInputService:GetMouseLocation()
+    aimCircle.Position = mouseLoc
+    aimCircle.Radius = cfg.aimAssistFov
+    aimCircle.Visible = cfg.aimbotEnabled
+    
+    silentCircle.Position = mouseLoc
+    silentCircle.Radius = cfg.silentAimFov
+    silentCircle.Visible = cfg.silentAimEnabled
+
     local isRmbPressed = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
     if cfg.aimbotEnabled and (aimbotActiveState or isRmbPressed) then
         local target = getTargetInFov(cfg.aimAssistFov)
         if target then
             camera.CFrame = CFrame.new(camera.CFrame.Position, target.Position)
-            local tool = player.Character and player.Character:FindFirstChildOfClass("Tool")
-            if tool and tool:FindFirstChild("Input") then tool.Input:FireServer(mouse.Hit.p) end
         end
     end
     
