@@ -13,8 +13,10 @@ local cfg = {
     tpOnRespawn = false,
     grabGuns = false,
     espEnabled = false,
-    guiSizeState = "Normal",
-    aimMaxDistance = 250
+    guiScalePercent = 100,
+    aimMaxDistance = 250,
+    freecamEnabled = false,
+    freecamSpeed = 1
 }
 
 local binds = {
@@ -39,18 +41,22 @@ local minimized = false
 local aimbotActiveState = false
 
 local function saveConfig()
-    local data = {cfg = cfg, waypoints = waypoints, whitelist = whitelist, blacklist = blacklist}
-    pcall(function() writefile("PL_Premium_Hub_v2.json", HttpService:JSONEncode(data)) end)
+    local data = {cfg = cfg, waypoints = waypoints, whitelist = whitelist, blacklist = blacklist, binds = {}}
+    for k, v in pairs(binds) do data.binds[k] = v.Name end
+    pcall(function() writefile("PL_Premium_Hub_v4.json", HttpService:JSONEncode(data)) end)
 end
 
 local function loadConfig()
     pcall(function()
-        if isfile and isfile("PL_Premium_Hub_v2.json") then
-            local data = HttpService:JSONDecode(readfile("PL_Premium_Hub_v2.json"))
+        if isfile and isfile("PL_Premium_Hub_v4.json") then
+            local data = HttpService:JSONDecode(readfile("PL_Premium_Hub_v4.json"))
             if data.cfg then cfg = data.cfg end
             if data.waypoints then waypoints = data.waypoints end
             if data.whitelist then whitelist = data.whitelist end
             if data.blacklist then blacklist = data.blacklist end
+            if data.binds then
+                for k, v in pairs(data.binds) do binds[k] = Enum.KeyCode[v] end
+            end
         end
     end)
 end
@@ -122,7 +128,12 @@ local function getBestTarget()
     if not myHrp then return nil end
     for _, p in ipairs(game.Players:GetPlayers()) do
         if p ~= player and p.Character and p.TeamColor ~= player.TeamColor then
-            if whitelist[p.Name] or blacklist[p.Name] == false then
+            local teamName = "Neutral"
+            if p.TeamColor == BrickColor.new("Bright blue") then teamName = "Guards"
+            elseif p.TeamColor == BrickColor.new("Bright orange") then teamName = "Criminals"
+            elseif p.TeamColor == BrickColor.new("Bright yellow") then teamName = "Inmates" end
+            
+            if whitelist[teamName] or (whitelist[p.Name] or (blacklist[p.Name] == false and blacklist[teamName] ~= true)) then
                 local character = p.Character
                 local humanoid = character:FindFirstChildOfClass("Humanoid")
                 if humanoid and humanoid.Health > 0 then
@@ -140,7 +151,34 @@ local function getBestTarget()
     return closest
 end
 
+local fcCam = nil
 RunService.RenderStepped:Connect(function()
+    if cfg.freecamEnabled then
+        if not fcCam then
+            fcCam = Instance.new("Part")
+            fcCam.Anchored = true
+            fcCam.CanCollide = false
+            fcCam.Transparency = 1
+            fcCam.CFrame = camera.CFrame
+            camera.CameraType = Enum.CameraType.Scriptable
+        end
+        local lookVec = camera.CFrame.LookVector
+        local rightVec = camera.CFrame.RightVector
+        local moveVec = Vector3.new(0,0,0)
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveVec = moveVec + lookVec end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveVec = moveVec - lookVec end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveVec = moveVec - rightVec end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveVec = moveVec + rightVec end
+        fcCam.CFrame = fcCam.CFrame + (moveVec * cfg.freecamSpeed)
+        camera.CFrame = fcCam.CFrame
+    else
+        if fcCam then
+            fcCam:Destroy()
+            fcCam = nil
+            camera.CameraType = Enum.CameraType.Custom
+        end
+    end
+
     local isRmbPressed = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
     if cfg.aimbotEnabled and (aimbotActiveState or isRmbPressed) then
         local target = getBestTarget()
@@ -170,6 +208,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
+
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
 local MainFrame = Instance.new("Frame", ScreenGui)
 local Title = Instance.new("TextLabel", MainFrame)
@@ -181,31 +220,47 @@ ScreenGui.Name = "PL_Premium_Hub_UI"
 ScreenGui.ResetOnSpawn = false
 MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 MainFrame.Active = true MainFrame.Draggable = true
+UICorner.CornerRadius = UDim.new(0, 6)
 
-local function applySize()
-    if cfg.guiSizeState == "Large" then
-        MainFrame.Size = UDim2.new(0, 450, 0, 400)
+local allTextObjects = {}
+local function registerText(obj, baseSize)
+    allTextObjects[obj] = baseSize
+    obj.TextSize = baseSize * (cfg.guiScalePercent / 100)
+    obj.Font = Enum.Font.GothamBold
+end
+
+local function applySizeAndScale()
+    local multiplier = cfg.guiScalePercent / 100
+    if minimized then
+        MainFrame.Size = UDim2.new(0, 350 * multiplier, 0, 35)
     else
-        MainFrame.Size = UDim2.new(0, 350, 0, 300)
+        MainFrame.Size = UDim2.new(0, 350 * multiplier, 0, 300 * multiplier)
     end
     Title.Size = UDim2.new(1, 0, 0, 35)
     TabBar.Size = UDim2.new(1, 0, 0, 30) TabBar.Position = UDim2.new(0, 0, 0, 35)
     ContentFrame.Size = UDim2.new(1, 0, 1, -65) ContentFrame.Position = UDim2.new(0, 0, 0, 65)
+    
+    for obj, baseSize in pairs(allTextObjects) do
+        if obj and obj.Parent then
+            obj.TextSize = baseSize * multiplier
+        else
+            allTextObjects[obj] = nil
+        end
+    end
 end
 
-Title.Text = "Prison Life Premium Hub" Title.TextColor3 = Color3.fromRGB(255, 255, 255) Title.Font = Enum.Font.SourceSansBold
+Title.Text = "Prison Life Premium Hub" Title.TextColor3 = Color3.fromRGB(255, 255, 255) registerText(Title, 15)
 TabBar.BackgroundTransparency = 1 ContentFrame.BackgroundTransparency = 1
-applySize() UICorner.CornerRadius = UDim.new(0, 6)
 
 local tabs = {}
 local function createTab(name, text, pos)
     local btn = Instance.new("TextButton", TabBar)
     btn.Size = UDim2.new(0.2, 0, 1, 0) btn.Position = pos
     btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40) btn.Text = text btn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    btn.Font = Enum.Font.SourceSansBold btn.BorderSizePixel = 0
+    btn.BorderSizePixel = 0 registerText(btn, 13)
     local f = Instance.new("ScrollingFrame", ContentFrame)
     f.Size = UDim2.new(1, -20, 1, -20) f.Position = UDim2.new(0, 10, 0, 10) f.BackgroundTransparency = 1 f.Visible = false
-    f.ScrollBarThickness = 4 f.CanvasSize = UDim2.new(0, 0, 0, 500)
+    f.ScrollBarThickness = 4 f.CanvasSize = UDim2.new(0, 0, 0, 600)
     local l = Instance.new("UIListLayout", f) l.Padding = UDim.new(0, 5)
     tabs[name] = {btn = btn, frame = f}
     btn.MouseButton1Click:Connect(function()
@@ -223,51 +278,85 @@ tabs.Main.frame.Visible = true
 
 local function createToggle(parent, text, default, callback)
     local btn = Instance.new("TextButton", parent)
-    btn.Size = UDim2.new(1, 0, 0, 30) btn.Font = Enum.Font.SourceSansBold btn.TextSize = 14
+    btn.Size = UDim2.new(1, 0, 0, 30) registerText(btn, 13)
     local function update()
         btn.Text = text .. ": " .. (default and "ON" or "OFF")
         btn.BackgroundColor3 = default and Color3.fromRGB(50, 180, 50) or Color3.fromRGB(180, 50, 50)
     end
     btn.MouseButton1Click:Connect(function() default = not default callback(default) update() saveConfig() end)
     update() Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+    return btn
 end
 
 createToggle(tabs.Main.frame, "Bypass Click TP", cfg.tpEnabled, function(v) cfg.tpEnabled = v end)
 createToggle(tabs.Main.frame, "Smart Aimbot", cfg.aimbotEnabled, function(v) cfg.aimbotEnabled = v end)
 createToggle(tabs.Main.frame, "See-Through Wall ESP", cfg.espEnabled, function(v) cfg.espEnabled = v end)
 
+createToggle(tabs.Main.frame, "Free Camera", cfg.freecamEnabled, function(v) cfg.freecamEnabled = v end)
+
+local fcSpeedContainer = Instance.new("Frame", tabs.Main.frame)
+fcSpeedContainer.Size = UDim2.new(1, 0, 0, 35) fcSpeedContainer.BackgroundTransparency = 1
+local fcSpeedLbl = Instance.new("TextLabel", fcSpeedContainer)
+fcSpeedLbl.Size = UDim2.new(0.6, 0, 1, 0) fcSpeedLbl.Text = "Freecam Speed:" fcSpeedLbl.TextColor3 = Color3.fromRGB(255,255,255) fcSpeedLbl.BackgroundTransparency = 1 fcSpeedLbl.TextXAlignment = Enum.TextXAlignment.Left registerText(fcSpeedLbl, 13)
+local fcSpeedBox = Instance.new("TextBox", fcSpeedContainer)
+fcSpeedBox.Size = UDim2.new(0.35, 0, 0.8, 0) fcSpeedBox.Position = UDim2.new(0.62, 0, 0.1, 0) fcSpeedBox.BackgroundColor3 = Color3.fromRGB(50,50,50) fcSpeedBox.TextColor3 = Color3.fromRGB(255,255,255) fcSpeedBox.Text = tostring(cfg.freecamSpeed) Instance.new("UICorner", fcSpeedBox) registerText(fcSpeedBox, 13)
+fcSpeedBox.FocusLost:Connect(function()
+    local num = tonumber(fcSpeedBox.Text)
+    if num then cfg.freecamSpeed = num saveConfig() else fcSpeedBox.Text = tostring(cfg.freecamSpeed) end
+end)
+
+local fcExitTpBtn = Instance.new("TextButton", tabs.Main.frame)
+fcExitTpBtn.Size = UDim2.new(1, 0, 0, 30) fcExitTpBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70) fcExitTpBtn.Text = "Exit Freecam & TP Here" registerText(fcExitTpBtn, 13)
+fcExitTpBtn.MouseButton1Click:Connect(function()
+    cfg.freecamEnabled = false
+    safeTeleport(camera.CFrame.Position)
+end)
+Instance.new("UICorner", fcExitTpBtn)
+
+local unprotectMouseBtn = Instance.new("TextButton", tabs.Main.frame)
+unprotectMouseBtn.Size = UDim2.new(1, 0, 0, 30) unprotectMouseBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70) unprotectMouseBtn.Text = "Unlock Mouse / Free Cursor" registerText(unprotectMouseBtn, 13)
+unprotectMouseBtn.MouseButton1Click:Connect(function()
+    UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+end)
+Instance.new("UICorner", unprotectMouseBtn)
+
 createToggle(tabs.Config.frame, "Hitbox Mode (ON=Head/OFF=Body)", (cfg.aimMode == "Head"), function(v) cfg.aimMode = v and "Head" or "AllBody" end)
 createToggle(tabs.Config.frame, "Auto Grab Guns on Respawn", cfg.grabGuns, function(v) cfg.grabGuns = v end)
 createToggle(tabs.Config.frame, "Teleport to Last Pos on Death", cfg.tpOnRespawn, function(v) cfg.tpOnRespawn = v end)
 
-local sizeBtn = Instance.new("TextButton", tabs.Config.frame)
-sizeBtn.Size = UDim2.new(1, 0, 0, 30) sizeBtn.Font = Enum.Font.SourceSansBold sizeBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-sizeBtn.Text = "GUI Size: " .. cfg.guiSizeState
-sizeBtn.MouseButton1Click:Connect(function()
-    cfg.guiSizeState = (cfg.guiSizeState == "Normal") and "Large" or "Normal"
-    sizeBtn.Text = "GUI Size: " .. cfg.guiSizeState
-    applySize() saveConfig()
+local scaleContainer = Instance.new("Frame", tabs.Config.frame)
+scaleContainer.Size = UDim2.new(1, 0, 0, 35) scaleContainer.BackgroundTransparency = 1
+local scaleLbl = Instance.new("TextLabel", scaleContainer)
+scaleLbl.Size = UDim2.new(0.6, 0, 1, 0) scaleLbl.Text = "GUI Scale (%):" scaleLbl.TextColor3 = Color3.fromRGB(255,255,255) scaleLbl.BackgroundTransparency = 1 scaleLbl.TextXAlignment = Enum.TextXAlignment.Left registerText(scaleLbl, 13)
+local scaleBox = Instance.new("TextBox", scaleContainer)
+scaleBox.Size = UDim2.new(0.35, 0, 0.8, 0) scaleBox.Position = UDim2.new(0.62, 0, 0.1, 0) scaleBox.BackgroundColor3 = Color3.fromRGB(50,50,50) scaleBox.TextColor3 = Color3.fromRGB(255,255,255) scaleBox.Text = tostring(cfg.guiScalePercent) Instance.new("UICorner", scaleBox) registerText(scaleBox, 13)
+scaleBox.FocusLost:Connect(function()
+    local num = tonumber(scaleBox.Text)
+    if num and num >= 50 and num <= 250 then cfg.guiScalePercent = num applySizeAndScale() saveConfig() else scaleBox.Text = tostring(cfg.guiScalePercent) end
 end)
-Instance.new("UICorner", sizeBtn).CornerRadius = UDim.new(0, 4)
 
 local function updateWPMenu()
     for _, c in ipairs(tabs.Waypoints.frame:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
+    
+    local addWpActionBtn = Instance.new("TextButton", tabs.Waypoints.frame)
+    addWpActionBtn.Size = UDim2.new(1, 0, 0, 30) addWpActionBtn.BackgroundColor3 = Color3.fromRGB(60, 120, 60)
+    addWpActionBtn.Text = "+ Add New Waypoint" addWpActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255) registerText(addWpActionBtn, 13)
+    Instance.new("UICorner", addWpActionBtn)
+    addWpActionBtn.MouseButton1Click:Connect(function()
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            wpCount = wpCount + 1
+            table.insert(waypoints, {name = "Waypoint " .. wpCount, pos = char.HumanoidRootPart.Position})
+            updateWPMenu() saveConfig()
+        end
+    end)
+    
     for _, wp in ipairs(waypoints) do
         local b = Instance.new("TextButton", tabs.Waypoints.frame)
         b.Size = UDim2.new(1, 0, 0, 30) b.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        b.Text = wp.name b.TextColor3 = Color3.fromRGB(255, 255, 255) b.Font = Enum.Font.SourceSansBold
+        b.Text = wp.name b.TextColor3 = Color3.fromRGB(255, 255, 255) registerText(b, 13)
         b.MouseButton1Click:Connect(function() safeTeleport(wp.pos) end)
         Instance.new("UICorner", b)
-    end
-end
-updateWPMenu()
-
-local function addWaypoint()
-    local char = player.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        wpCount = wpCount + 1
-        table.insert(waypoints, {name = "Waypoint " .. wpCount, pos = char.HumanoidRootPart.Position})
-        updateWPMenu() saveConfig()
     end
 end
 
@@ -280,9 +369,9 @@ local bindButtons = {}
 local function createBindRow(actionName, displayName)
     local f = Instance.new("Frame", tabs.Keybinds.frame) f.Size = UDim2.new(1, 0, 0, 32) f.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
     local lbl = Instance.new("TextLabel", f) lbl.Size = UDim2.new(0.6, 0, 1, 0) lbl.Position = UDim2.new(0, 5, 0, 0)
-    lbl.Text = displayName lbl.TextColor3 = Color3.fromRGB(230, 230, 230) lbl.Font = Enum.Font.SourceSansBold lbl.BackgroundTransparency = 1 lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.Text = displayName lbl.TextColor3 = Color3.fromRGB(230, 230, 230) lbl.BackgroundTransparency = 1 lbl.TextXAlignment = Enum.TextXAlignment.Left registerText(lbl, 12)
     local b = Instance.new("TextButton", f) b.Size = UDim2.new(0.35, 0, 0.8, 0) b.Position = UDim2.new(0.62, 0, 0.1, 0)
-    b.BackgroundColor3 = Color3.fromRGB(65, 65, 65) b.Text = binds[actionName].Name b.TextColor3 = Color3.fromRGB(255, 255, 255) b.Font = Enum.Font.SourceSansBold
+    b.BackgroundColor3 = Color3.fromRGB(65, 65, 65) b.Text = binds[actionName].Name b.TextColor3 = Color3.fromRGB(255, 255, 255) registerText(b, 12)
     b.MouseButton1Click:Connect(function() if not currentRebinding then currentRebinding = actionName b.Text = "..." end end)
     Instance.new("UICorner", f) Instance.new("UICorner", b) bindButtons[actionName] = b
 end
@@ -297,43 +386,71 @@ createBindRow("Minimize", "Alt + Key: Minimize GUI")
 createBindRow("AimToggle", "Alt + Key: Toggle Aimbot")
 createBindRow("Reload", "Alt + Key: Reload Script")
 
+local openTeamList = nil
 local function updateListsMenu()
-    for _, c in ipairs(tabs.Lists.frame:GetChildren()) do if c:IsA("Frame") or c:IsA("TextLabel") then c:Destroy() end end
-    local teams = {["Guards"] = {}, ["Criminals"] = {}, ["Inmates"] = {}}
+    for _, c in ipairs(tabs.Lists.frame:GetChildren()) do if c:IsA("Frame") or c:IsA("TextButton") or c:IsA("TextLabel") then c:Destroy() end end
+    
+    local teamNames = {"Guards", "Criminals", "Inmates", "Neutral"}
+    local teamPlayers = {Guards = {}, Criminals = {}, Inmates = {}, Neutral = {}}
+    
     for _, p in ipairs(game.Players:GetPlayers()) do
         if p ~= player then
-            local tName = "Inmates"
+            local tName = "Neutral"
             if p.TeamColor == BrickColor.new("Bright blue") then tName = "Guards"
-            elseif p.TeamColor == BrickColor.new("Bright orange") then tName = "Criminals" end
-            table.insert(teams[tName], p)
+            elseif p.TeamColor == BrickColor.new("Bright orange") then tName = "Criminals"
+            elseif p.TeamColor == BrickColor.new("Bright yellow") then tName = "Inmates" end
+            table.insert(teamPlayers[tName], p)
         end
     end
-    for tName, players in pairs(teams) do
-        local head = Instance.new("TextLabel", tabs.Lists.frame) head.Size = UDim2.new(1, 0, 0, 20) head.Text = "--- " .. tName .. " ---"
-        head.TextColor3 = Color3.fromRGB(180, 180, 180) head.Font = Enum.Font.SourceSansBold head.BackgroundTransparency = 1
-        for _, p in ipairs(players) do
-            local row = Instance.new("Frame", tabs.Lists.frame) row.Size = UDim2.new(1, 0, 0, 35) row.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-            local lbl = Instance.new("TextLabel", row) lbl.Size = UDim2.new(0.5, 0, 1, 0) lbl.Position = UDim2.new(0, 5, 0, 0)
-            lbl.Text = p.Name lbl.TextColor3 = Color3.fromRGB(255, 255, 255) lbl.Font = Enum.Font.SourceSansBold lbl.BackgroundTransparency = 1 lbl.TextXAlignment = Enum.TextXAlignment.Left
-            local wBtn = Instance.new("TextButton", row) wBtn.Size = UDim2.new(0.2, 0, 0.8, 0) wBtn.Position = UDim2.new(0.55, 0, 0.1, 0)
-            wBtn.Text = "WL" wBtn.BackgroundColor3 = whitelist[p.Name] and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(70, 70, 70)
-            wBtn.MouseButton1Click:Connect(function() whitelist[p.Name] = not whitelist[p.Name] blacklist[p.Name] = nil updateListsMenu() saveConfig() end)
-            local bBtn = Instance.new("TextButton", row) bBtn.Size = UDim2.new(0.2, 0, 0.8, 0) bBtn.Position = UDim2.new(0.78, 0, 0.1, 0)
-            bBtn.Text = "BL" bBtn.BackgroundColor3 = blacklist[p.Name] and Color3.fromRGB(150, 50, 50) or Color3.fromRGB(70, 70, 70)
-            bBtn.MouseButton1Click:Connect(function() blacklist[p.Name] = not blacklist[p.Name] whitelist[p.Name] = nil updateListsMenu() saveConfig() end)
-            Instance.new("UICorner", row) Instance.new("UICorner", wBtn) Instance.new("UICorner", bBtn)
+    
+    for _, tName in ipairs(teamNames) do
+        local teamRow = Instance.new("Frame", tabs.Lists.frame)
+        teamRow.Size = UDim2.new(1, 0, 0, 35) teamRow.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+        Instance.new("UICorner", teamRow)
+        
+        local teamToggleBtn = Instance.new("TextButton", teamRow)
+        teamToggleBtn.Size = UDim2.new(0.5, 0, 1, 0) teamToggleBtn.Position = UDim2.new(0, 5, 0, 0)
+        teamToggleBtn.Text = tName .. " (" .. #teamPlayers[tName] .. ")" teamToggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
+        teamToggleBtn.BackgroundTransparency = 1 teamToggleBtn.TextXAlignment = Enum.TextXAlignment.Left registerText(teamToggleBtn, 13)
+        
+        teamToggleBtn.MouseButton1Click:Connect(function()
+            openTeamList = (openTeamList == tName) and nil or tName
+            updateListsMenu()
+        end)
+        
+        local wlBtn = Instance.new("TextButton", teamRow) wlBtn.Size = UDim2.new(0.2, 0, 0.8, 0) wlBtn.Position = UDim2.new(0.55, 0, 0.1, 0)
+        wlBtn.Text = "WL All" wlBtn.BackgroundColor3 = whitelist[tName] and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(70, 70, 70) registerText(wlBtn, 11)
+        Instance.new("UICorner", wlBtn)
+        wlBtn.MouseButton1Click:Connect(function() whitelist[tName] = not whitelist[tName] blacklist[tName] = nil updateListsMenu() saveConfig() end)
+        
+        local blBtn = Instance.new("TextButton", teamRow) blBtn.Size = UDim2.new(0.2, 0, 0.8, 0) blBtn.Position = UDim2.new(0.78, 0, 0.1, 0)
+        blBtn.Text = "BL All" blBtn.BackgroundColor3 = blacklist[tName] and Color3.fromRGB(150, 50, 50) or Color3.fromRGB(70, 70, 70) registerText(blBtn, 11)
+        Instance.new("UICorner", blBtn)
+        blBtn.MouseButton1Click:Connect(function() blacklist[tName] = not blacklist[tName] whitelist[tName] = nil updateListsMenu() saveConfig() end)
+        
+        if openTeamList == tName then
+            for _, p in ipairs(teamPlayers[tName]) do
+                local pRow = Instance.new("Frame", tabs.Lists.frame)
+                pRow.Size = UDim2.new(0.95, 0, 0, 32) pRow.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+                Instance.new("UICorner", pRow)
+                
+                local pLbl = Instance.new("TextLabel", pRow) pLbl.Size = UDim2.new(0.5, 0, 1, 0) pLbl.Position = UDim2.new(0, 5, 0, 0)
+                pLbl.Text = p.Name pLbl.TextColor3 = Color3.fromRGB(220, 220, 220) pLbl.BackgroundTransparency = 1 pLbl.TextXAlignment = Enum.TextXAlignment.Left registerText(pLbl, 12)
+                
+                local pwBtn = Instance.new("TextButton", pRow) pwBtn.Size = UDim2.new(0.2, 0, 0.8, 0) pwBtn.Position = UDim2.new(0.55, 0, 0.1, 0)
+                pwBtn.Text = "WL" pwBtn.BackgroundColor3 = whitelist[p.Name] and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(70, 70, 70) registerText(pwBtn, 11)
+                Instance.new("UICorner", pwBtn)
+                pwBtn.MouseButton1Click:Connect(function() whitelist[p.Name] = not whitelist[p.Name] blacklist[p.Name] = nil updateListsMenu() saveConfig() end)
+                
+                local pbBtn = Instance.new("TextButton", pRow) pbBtn.Size = UDim2.new(0.2, 0, 0.8, 0) pbBtn.Position = UDim2.new(0.78, 0, 0.1, 0)
+                pbBtn.Text = "BL" pbBtn.BackgroundColor3 = blacklist[p.Name] and Color3.fromRGB(150, 50, 50) or Color3.fromRGB(70, 70, 70) registerText(pbBtn, 11)
+                Instance.new("UICorner", pbBtn)
+                pbBtn.MouseButton1Click:Connect(function() blacklist[p.Name] = not blacklist[p.Name] whitelist[p.Name] = nil updateListsMenu() saveConfig() end)
+            end
         end
     end
 end
 game.Players.PlayerAdded:Connect(updateListsMenu) game.Players.PlayerRemoving:Connect(updateListsMenu) updateListsMenu()
-
-mouse.Button1Down:Connect(function()
-    if cfg.tpEnabled and mouse.Target then
-        if UserInputService:IsKeyDown(binds.ClickTP) then
-            safeTeleport(mouse.Hit.p + Vector3.new(0, 3, 0))
-        end
-    end
-end)
 
 UserInputService.InputBegan:Connect(function(input, proc)
     if currentRebinding then
@@ -344,21 +461,29 @@ UserInputService.InputBegan:Connect(function(input, proc)
         end
         return
     end
-    if proc then return end
-local alt = UserInputService:IsKeyDown(Enum.KeyCode.LeftAlt) or UserInputService:IsKeyDown(Enum.KeyCode.RightAlt)
-if alt then
-if input.KeyCode == binds.Rejoin then
-if #game.Players:GetPlayers() <= 1 then TeleportService:Teleport(game.PlaceId, player) else TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player) end
-elseif input.KeyCode == binds.ActivateTP then
-cfg.tpEnabled = not cfg.tpEnabled saveConfig()
-elseif input.KeyCode == binds.SaveWP then addWaypoint()
-elseif input.KeyCode == binds.DeleteWP then deleteLastWaypoint()
-elseif input.KeyCode == binds.AimToggle then aimbotActiveState = not aimbotActiveState
-elseif input.KeyCode == binds.Reload then ScreenGui:Destroy() loadstring(game:HttpGet("githubusercontent.com"))()
-elseif input.KeyCode == binds.Ghost then ghostMode = not ghostMode MainFrame.Visible = not ghostMode
-elseif input.KeyCode == binds.Minimize then
-minimized = not minimized
-if minimized then MainFrame.Size = UDim2.new(0, MainFrame.Size.X.Offset, 0, 35) TabBar.Visible = false ContentFrame.Visible = false else applySize() TabBar.Visible = true ContentFrame.Visible = true end
-end
-end
+    
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        local alt = UserInputService:IsKeyDown(Enum.KeyCode.LeftAlt) or UserInputService:IsKeyDown(Enum.KeyCode.RightAlt)
+        if alt then
+            if input.KeyCode == binds.ActivateTP then
+                cfg.tpEnabled = not cfg.tpEnabled saveConfig()
+            elseif input.KeyCode == binds.Rejoin then
+                if #game.Players:GetPlayers() <= 1 then TeleportService:Teleport(game.PlaceId, player) else TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player) end
+            elseif input.KeyCode == binds.SaveWP then addWaypoint()
+            elseif input.KeyCode == binds.DeleteWP then deleteLastWaypoint()
+            elseif input.KeyCode == binds.AimToggle then aimbotActiveState = not aimbotActiveState
+            elseif input.KeyCode == binds.Reload then ScreenGui:Destroy() loadstring(game:HttpGet("https://raw.githubusercontent.com/sakuyaidzayoi-cyber/mrs/refs/heads/main/t.lua"))()
+            elseif input.KeyCode == binds.Ghost then ghostMode = not ghostMode MainFrame.Visible = not ghostMode
+            elseif input.KeyCode == binds.Minimize then
+                minimized = not minimized
+                if minimized then MainFrame.Size = UDim2.new(0, MainFrame.Size.X.Offset, 0, 35) TabBar.Visible = false ContentFrame.Visible = false else applySizeAndScale() TabBar.Visible = true ContentFrame.Visible = true end
+            end
+        elseif input.KeyCode == binds.ClickTP then
+            if cfg.tpEnabled and mouse.Target then
+                safeTeleport(mouse.Hit.p + Vector3.new(0, 3, 0))
+            end
+        end
+    end
 end)
+
+applySizeAndScale() updateWPMenu()
