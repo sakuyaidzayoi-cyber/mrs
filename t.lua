@@ -56,14 +56,14 @@ local function saveConfig()
         data.binds[k] = v.Name 
     end
     pcall(function() 
-        writefile("PL_Solara_Premium.json", HttpService:JSONEncode(data)) 
+        writefile("PL_Solara_Premium_Fixed.json", HttpService:JSONEncode(data)) 
     end)
 end
 
 local function loadConfig()
     pcall(function()
-        if isfile and isfile("PL_Solara_Premium.json") then
-            local data = HttpService:JSONDecode(readfile("PL_Solara_Premium.json"))
+        if isfile and isfile("PL_Solara_Premium_Fixed.json") then
+            local data = HttpService:JSONDecode(readfile("PL_Solara_Premium_Fixed.json"))
             if data.cfg then cfg = data.cfg end
             if data.waypoints then waypoints = data.waypoints end
             if data.whitelist then whitelist = data.whitelist end
@@ -265,6 +265,74 @@ mouse.Button1Down:Connect(function()
         end
     end
 end)
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local MainFrame = Instance.new("Frame", ScreenGui)
+local Title = Instance.new("TextLabel", MainFrame)
+local TabBar = Instance.new("Frame", MainFrame)
+local ContentFrame = Instance.new("Frame", MainFrame)
+local UICorner = Instance.new("UICorner", MainFrame)
+
+ScreenGui.Name = "PL_Premium_Hub_UI"
+ScreenGui.ResetOnSpawn = false
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.Active = true MainFrame.Draggable = true
+UICorner.CornerRadius = UDim.new(0, 6)
+
+local allTextObjects = {}
+local function registerText(obj, baseSize)
+    allTextObjects[obj] = baseSize
+    obj.TextSize = baseSize * (cfg.guiScalePercent / 100)
+    obj.Font = Enum.Font.GothamBold
+end
+
+local function applySizeAndScale()
+    local multiplier = cfg.guiScalePercent / 100
+    if minimized then MainFrame.Size = UDim2.new(0, 350 * multiplier, 0, 35) else MainFrame.Size = UDim2.new(0, 350 * multiplier, 0, 300 * multiplier) end
+    Title.Size = UDim2.new(1, 0, 0, 35) TabBar.Size = UDim2.new(1, 0, 0, 30) TabBar.Position = UDim2.new(0, 0, 0, 35) ContentFrame.Size = UDim2.new(1, 0, 1, -65) ContentFrame.Position = UDim2.new(0, 0, 0, 65)
+    for obj, baseSize in pairs(allTextObjects) do if obj and obj.Parent then obj.TextSize = baseSize * multiplier else allTextObjects[obj] = nil end end
+end
+
+Title.Text = "Prison Life Premium Hub" Title.TextColor3 = Color3.fromRGB(255, 255, 255) registerText(Title, 15)
+TabBar.BackgroundTransparency = 1 ContentFrame.BackgroundTransparency = 1
+
+local tabs = {}
+local function createTab(name, text, pos)
+    local btn = Instance.new("TextButton", TabBar)
+    btn.Size = UDim2.new(0.2, 0, 1, 0) btn.Position = pos
+    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40) btn.Text = text btn.TextColor3 = Color3.fromRGB(200, 200, 200) btn.BorderSizePixel = 0 registerText(btn, 13)
+    local f = Instance.new("ScrollingFrame", ContentFrame) f.Size = UDim2.new(1, -20, 1, -20) f.Position = UDim2.new(0, 10, 0, 10) f.BackgroundTransparency = 1 f.Visible = false f.ScrollBarThickness = 4 f.CanvasSize = UDim2.new(0, 0, 0, 600)
+    local l = Instance.new("UIListLayout", f) l.Padding = UDim.new(0, 5) tabs[name] = {btn = btn, frame = f}
+    btn.MouseButton1Click:Connect(function() for _, t in pairs(tabs) do t.frame.Visible = false t.btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40) end f.Visible = true btn.BackgroundColor3 = Color3.fromRGB(55, 55, 55) end)
+end
+
+createTab("Main", "Main", UDim2.new(0, 0, 0, 0))
+createTab("Waypoints", "WPs", UDim2.new(0.2, 0, 0, 0))
+createTab("Keybinds", "Binds", UDim2.new(0.4, 0, 0, 0))
+createTab("Lists", "Teams", UDim2.new(0.6, 0, 0, 0))
+createTab("Config", "Cfg", UDim2.new(0.8, 0, 0, 0))
+tabs.Main.frame.Visible = true
+
+local function createToggle(parent, text, default, callback)
+    local btn = Instance.new("TextButton", parent) btn.Size = UDim2.new(1, 0, 0, 30) registerText(btn, 13)
+    local function update() btn.Text = text .. ": " .. (default and "ON" or "OFF") btn.BackgroundColor3 = default and Color3.fromRGB(50, 180, 50) or Color3.fromRGB(180, 50, 50) end
+    btn.MouseButton1Click:Connect(function() default = not default callback(default) update() saveConfig() end)
+    update() Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+end
+
+createToggle(tabs.Main.frame, "Bypass Click TP", cfg.tpEnabled, function(v) cfg.tpEnabled = v end)
+createToggle(tabs.Main.frame, "Smart Aimbot", cfg.aimbotEnabled, function(v) cfg.aimbotEnabled = v end)
+createToggle(tabs.Main.frame, "See-Through Wall ESP", cfg.espEnabled, function(v) cfg.espEnabled = v end)
+createToggle(tabs.Main.frame, "Solara Silent Aim", cfg.silentAimEnabled, function(v) cfg.silentAimEnabled = v end)
+
+createToggle(tabs.Config.frame, "Hitbox Mode (ON=Head/OFF=Body)", (cfg.aimMode == "Head"), function(v) cfg.aimMode = v and "Head" or "AllBody" end)
+createToggle(tabs.Config.frame, "Auto Grab Guns on Respawn", cfg.grabGuns, function(v) cfg.grabGuns = v end)
+createToggle(tabs.Config.frame, "Teleport to Last Pos on Death", cfg.tpOnRespawn, function(v) cfg.tpOnRespawn = v end)
+
+local scaleContainer = Instance.new("Frame", tabs.Config.frame) scaleContainer.Size = UDim2.new(1, 0, 0, 35) scaleContainer.BackgroundTransparency = 1
+local scaleLbl = Instance.new("TextLabel", scaleContainer) scaleLbl.Size = UDim2.new(0.6, 0, 1, 0) scaleLbl.Text = "GUI Scale (%):" scaleLbl.TextColor3 = Color3.fromRGB(255,255,255) scaleLbl.BackgroundTransparency = 1 scaleLbl.TextXAlignment = Enum.TextXAlignment.Left registerText(scaleLbl, 13)
+local scaleBox = Instance.new("TextBox", scaleContainer) scaleBox.Size = UDim2.new(0.35, 0, 0.8, 0) scaleBox.Position = UDim2.new(0.62, 0, 0.1, 0) scaleBox.BackgroundColor3 = Color3.fromRGB(50,50,50) scaleBox.TextColor3 = Color3.fromRGB(255,255,255) scaleBox.Text = tostring(cfg.guiScalePercent) Instance.new("UICorner", scaleBox) registerText(scaleBox, 13)
+scaleBox.FocusLost:Connect(function() local num = tonumber(scaleBox.Text) if num and num >= 50 and num <= 250 then cfg.guiScalePercent = num applySizeAndScale() saveConfig() else scaleBox.Text = tostring(cfg.guiScalePercent) end end)
+
 local wpAddBtn = Instance.new("TextButton", tabs.Waypoints.frame) wpAddBtn.Size = UDim2.new(1, 0, 0, 30) wpAddBtn.BackgroundColor3 = Color3.fromRGB(60,60,180) wpAddBtn.Text = "+ Add New Waypoint" wpAddBtn.TextColor3 = Color3.fromRGB(255,255,255) registerText(wpAddBtn, 13) Instance.new("UICorner", wpAddBtn)
 
 local function updateWPMenu()
@@ -281,8 +349,7 @@ local bindButtons = {}
 local function createBindRow(actionName, displayName)
     local f = Instance.new("Frame", tabs.Keybinds.frame) f.Size = UDim2.new(1, 0, 0, 32) f.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
     local lbl = Instance.new("TextLabel", f) lbl.Size = UDim2.new(0.6, 0, 1, 0) lbl.Position = UDim2.new(0, 5, 0, 0)
-    lbl.Text = displayName lbl.TextColor3 = Color3.fromRGB(230, 230, 230) f.BackgroundTransparency = 1 lbl.TextXAlignment = Enum.TextXAlignment.Left registerText(lbl, 12)
-    -- Исправлена ошибка: TextXAlignment теперь применяется к текстовой метке, а не к фрейму
+    lbl.Text = displayName lbl.TextColor3 = Color3.fromRGB(230, 230, 230) f.BackgroundTransparency = 1 registerText(lbl, 12)
     lbl.TextXAlignment = Enum.TextXAlignment.Left
     local b = Instance.new("TextButton", f) b.Size = UDim2.new(0.35, 0, 0.8, 0) b.Position = UDim2.new(0.62, 0, 0.1, 0)
     b.BackgroundColor3 = Color3.fromRGB(65, 65, 65) b.Text = binds[actionName].Name b.TextColor3 = Color3.fromRGB(255, 255, 255) registerText(b, 12)
@@ -322,7 +389,8 @@ local function updateListsMenu()
         if openTeams[tName] then
             for _, p in ipairs(players) do
                 local row = Instance.new("Frame", tabs.Lists.frame) row.Size = UDim2.new(1, 0, 0, 35) row.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-                local lbl = Instance.new("TextLabel", row) lbl.Size = UDim2.new(0.5, 0, 1, 0) lbl.Position = UDim2.new(0, 5, 0, 0) lbl.Text = p.Name lbl.TextColor3 = Color3.fromRGB(255, 255, 255) lbl.BackgroundTransparency = 1 lbl.TextXAlignment = Enum.TextXAlignment.Left registerText(lbl, 12)
+                local lbl = Instance.new("TextLabel", row) lbl.Size = UDim2.new(0.5, 0, 1, 0) lbl.Position = UDim2.new(0, 5, 0, 0) lbl.Text = p.Name lbl.TextColor3 = Color3.fromRGB(255, 255, 255) lbl.BackgroundTransparency = 1 registerText(lbl, 12)
+                lbl.TextXAlignment = Enum.TextXAlignment.Left
                 local wBtn = Instance.new("TextButton", row) wBtn.Size = UDim2.new(0.2, 0, 0.8, 0) wBtn.Position = UDim2.new(0.55, 0, 0.1, 0) wBtn.Text = "WL" wBtn.BackgroundColor3 = whitelist[p.Name] and Color3.fromRGB(50, 150, 50) or Color3.fromRGB(70, 70, 70) registerText(wBtn, 11)
                 wBtn.MouseButton1Click:Connect(function() whitelist[p.Name] = not whitelist[p.Name] blacklist[p.Name] = nil updateListsMenu() saveConfig() end)
                 local bBtn = Instance.new("TextButton", row) bBtn.Size = UDim2.new(0.2, 0, 0.8, 0) bBtn.Position = UDim2.new(0.78, 0, 0.1, 0) bBtn.Text = "BL" bBtn.BackgroundColor3 = blacklist[p.Name] and Color3.fromRGB(150, 150, 50) or Color3.fromRGB(70, 70, 70) registerText(bBtn, 11)
